@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moquin QA · SITREP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', system-ui, sans-serif; background: #f5f4f0; color: #1a1a1a; min-height: 100vh; padding: 1.5rem 1rem 3rem; }
+.page { max-width: 620px; margin: 0 auto; }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 10px; }
+.logo { font-size: 18px; font-weight: 500; }
+.logo span { color: #e63d00; }
+.shift-toggle { display: flex; gap: 6px; }
+.shift-btn { padding: 7px 14px; border: 1px solid #d0cfc9; border-radius: 8px; background: #fff; color: #666; cursor: pointer; font-size: 13px; font-weight: 500; font-family: inherit; }
+.shift-radio { display: none; }
+#sh1:checked ~ .page .shift-toggle label[for="sh1"],
+#sh2:checked ~ .page .shift-toggle label[for="sh2"],
+#sh3:checked ~ .page .shift-toggle label[for="sh3"] { background: #e8f0fb; color: #1a4fa0; border-color: #a8c0e8; }
+.meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.25rem; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.flabel { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+select, input[type="date"], input[type="text"] { font-family: inherit; font-size: 14px; color: #1a1a1a; background: #fff; border: 1px solid #e0dfd9; border-radius: 8px; padding: 9px 10px; width: 100%; outline: none; }
+.other-wrap { display: none; margin-top: 6px; }
+.sw { margin-bottom: 8px; }
+.sr { display: none; }
+.station-card { background: #fff; border: 1px solid #e8e7e2; border-radius: 12px; padding: .85rem 1rem; }
+.sc-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.sc-title { font-size: 14px; font-weight: 500; }
+.status-btns { display: flex; gap: 6px; }
+.lbl-ok, .lbl-issue { display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px; border: 1px solid #d0cfc9; border-radius: 20px; background: #fff; cursor: pointer; font-size: 12px; font-family: inherit; color: #888; user-select: none; -webkit-user-select: none; }
+.lbl-ok { background: #eaf6ee; color: #2a7d46; border-color: #a8d8b8; }
+.issue-panel { display: none; margin-top: 10px; border-top: 1px solid #f0efe9; padding-top: 10px; }
+.issue-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin-bottom: 8px; }
+.issue-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #555; cursor: pointer; padding: 4px 0; }
+.issue-item input[type=checkbox] { width: 16px; height: 16px; flex-shrink: 0; accent-color: #c0392b; }
+textarea.notes-ta { width: 100%; font-family: inherit; font-size: 13px; color: #333; background: #fafaf8; border: 1px solid #e8e7e2; border-radius: 8px; padding: 7px 9px; resize: none; outline: none; }
+textarea.notes-ta::placeholder { color: #bbb; }
+.gen-notes-wrap { margin-top: 8px; }
+textarea.gen-notes-ta { width: 100%; font-family: inherit; font-size: 13px; color: #333; background: #fafaf8; border: 1px solid #e8e7e2; border-radius: 8px; padding: 7px 9px; resize: none; outline: none; }
+textarea.gen-notes-ta::placeholder { color: #bbb; }
+.sr.issue-r:checked ~ .station-card .issue-panel { display: block; }
+.sr.issue-r:checked ~ .station-card { border-color: #f5a09a; }
+.sr.issue-r:checked ~ .station-card .lbl-issue { background: #fef0ee; color: #c0392b; border-color: #f5a09a; }
+.sr.issue-r:checked ~ .station-card .lbl-ok { background: #fff; color: #888; border-color: #d0cfc9; }
+.priority-box { background: #fffbeb; border: 1px solid #f5d97a; border-radius: 8px; padding: 10px 12px; margin-bottom: 1rem; margin-top: 8px; }
+.priority-box .flabel { color: #a07a20; margin-bottom: 4px; display: block; }
+textarea.priority-ta { width: 100%; font-family: inherit; font-size: 13px; color: #333; background: transparent; border: none; padding: 4px 0; resize: none; outline: none; line-height: 1.5; }
+.actions { display: flex; gap: 10px; margin-top: .5rem; }
+.btn-reset { padding: 13px 20px; background: transparent; border: 1px solid #d0cfc9; border-radius: 8px; cursor: pointer; font-size: 14px; color: #888; font-family: inherit; }
+.btn-send { flex: 1; padding: 13px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 500; font-family: inherit; }
+.btn-send:disabled { opacity: .45; cursor: not-allowed; }
+.toast { display: none; border-radius: 8px; padding: 12px 14px; font-size: 14px; margin-top: 10px; text-align: center; font-weight: 500; }
+.toast.success { display: block; background: #eaf6ee; border: 1px solid #a8d8b8; color: #2a7d46; }
+.toast.error   { display: block; background: #fef0ee; border: 1px solid #f5a09a; color: #c0392b; }
+.foot { text-align: center; font-size: 11px; color: #bbb; margin-top: 10px; line-height: 1.6; }
+@media (max-width: 480px) {
+  .issue-grid { grid-template-columns: 1fr; }
+  .sc-header { flex-direction: column; align-items: flex-start; }
+  .status-btns { width: 100%; }
+  .lbl-ok, .lbl-issue { flex: 1; justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<input type="radio" class="shift-radio" name="shift" id="sh1" value="1st" checked>
+<input type="radio" class="shift-radio" name="shift" id="sh2" value="2nd">
+<input type="radio" class="shift-radio" name="shift" id="sh3" value="3rd">
+
+<div class="page">
+  <div class="header">
+    <div class="logo">moquin <span>QA</span> &middot; sitrep</div>
+    <div class="shift-toggle">
+      <label class="shift-btn" for="sh1">1st shift</label>
+      <label class="shift-btn" for="sh2">2nd shift</label>
+      <label class="shift-btn" for="sh3">3rd shift</label>
+    </div>
+  </div>
+
+  <div class="meta">
+    <div class="field">
+      <label class="flabel">Submitted by</label>
+      <select id="submitter-select" onchange="handleSub(this)">
+        <option value="">-- select name --</option>
+        <option value="Anthony M">Anthony M</option>
+        <option value="Norma S">Norma S</option>
+        <option value="Mariah G">Mariah G</option>
+        <option value="Mathias H">Mathias H</option>
+        <option value="other">Other...</option>
+      </select>
+      <div class="other-wrap" id="other-wrap">
+        <input type="text" id="other-name" placeholder="Type your name...">
+      </div>
+    </div>
+    <div class="field">
+      <label class="flabel">Date</label>
+      <input type="date" id="report-date">
+      <script>
+        var _d=new Date(),_m=_d.getMonth()+1,_dd=_d.getDate(),_y=_d.getFullYear();
+        document.getElementById('report-date').value=_y+'-'+(_m<10?'0':'')+_m+'-'+(_dd<10?'0':'')+_dd;
+      </script>
+    </div>
+  </div>
+
+  <!-- KAMA -->
+  <div class="sw">
+    <input class="sr" type="radio" name="s-kama" id="kama-ok" value="ok" checked>
+    <input class="sr issue-r" type="radio" name="s-kama" id="kama-issue" value="issue">
+    <div class="station-card">
+      <div class="sc-header">
+        <div class="sc-title">Kama</div>
+        <div class="status-btns">
+          <label class="lbl-ok" for="kama-ok">&#10003; Nothing to report</label>
+          <label class="lbl-issue" for="kama-issue">&#9651; Issues</label>
+        </div>
+      </div>
+      <div class="gen-notes-wrap">
+        <textarea class="gen-notes-ta" id="gennotes-kama" rows="2" placeholder="Notes (optional)..."></textarea>
+      </div>
+      <div class="issue-panel">
+        <div class="issue-grid">
+          <label class="issue-item"><input type="checkbox" data-s="kama" value="Foil skip / void"> Foil skip / void</label>
+          <label class="issue-item"><input type="checkbox" data-s="kama" value="Foil misregister"> Foil misregister</label>
+          <label class="issue-item"><input type="checkbox" data-s="kama" value="Foil peeling / lifting"> Foil peeling / lifting</label>
+          <label class="issue-item"><input type="checkbox" data-s="kama" value="Emboss depth off"> Emboss depth off</label>
+          <label class="issue-item"><input type="checkbox" data-s="kama" value="Foil wrinkle / crease"> Foil wrinkle / crease</label>
+          <label class="issue-item"><input type="checkbox" data-s="kama" value="Marking / scratching"> Marking / scratching</label>
+          <label class="issue-item"><input type="checkbox" data-s="kama" value="Die alignment issue"> Die alignment issue</label>
+          <label class="issue-item"><input type="checkbox" data-s="kama" value="Ink scuffing"> Ink scuffing</label>
+        </div>
+        <textarea class="notes-ta" id="notes-kama" rows="2" placeholder="Additional notes..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW DIE CUTTER -->
+  <div class="sw">
+    <input class="sr" type="radio" name="s-newdc" id="newdc-ok" value="ok" checked>
+    <input class="sr issue-r" type="radio" name="s-newdc" id="newdc-issue" value="issue">
+    <div class="station-card">
+      <div class="sc-header">
+        <div class="sc-title">New Die Cutter</div>
+        <div class="status-btns">
+          <label class="lbl-ok" for="newdc-ok">&#10003; Nothing to report</label>
+          <label class="lbl-issue" for="newdc-issue">&#9651; Issues</label>
+        </div>
+      </div>
+      <div class="gen-notes-wrap">
+        <textarea class="gen-notes-ta" id="gennotes-newdc" rows="2" placeholder="Notes (optional)..."></textarea>
+      </div>
+      <div class="issue-panel">
+        <div class="issue-grid">
+          <label class="issue-item"><input type="checkbox" data-s="newdc" value="Nicking"> Nicking</label>
+          <label class="issue-item"><input type="checkbox" data-s="newdc" value="Scoring issue"> Scoring issue</label>
+          <label class="issue-item"><input type="checkbox" data-s="newdc" value="Misregister / misalignment"> Misregister / misalignment</label>
+          <label class="issue-item"><input type="checkbox" data-s="newdc" value="Cracking on fold"> Cracking on fold</label>
+          <label class="issue-item"><input type="checkbox" data-s="newdc" value="Torn / rough edges"> Torn / rough edges</label>
+          <label class="issue-item"><input type="checkbox" data-s="newdc" value="Stripping issue"> Stripping issue</label>
+          <label class="issue-item"><input type="checkbox" data-s="newdc" value="Sheet feeding issue"> Sheet feeding issue</label>
+          <label class="issue-item"><input type="checkbox" data-s="newdc" value="Blanker issue"> Blanker issue</label>
+          <label class="issue-item"><input type="checkbox" data-s="newdc" value="Ink smearing / scuffing"> Ink smearing / scuffing</label>
+          <label class="issue-item"><input type="checkbox" data-s="newdc" value="Die wear"> Die wear</label>
+        </div>
+        <textarea class="notes-ta" id="notes-newdc" rows="2" placeholder="Additional notes..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- OLD DIE CUTTER -->
+  <div class="sw">
+    <input class="sr" type="radio" name="s-olddc" id="olddc-ok" value="ok" checked>
+    <input class="sr issue-r" type="radio" name="s-olddc" id="olddc-issue" value="issue">
+    <div class="station-card">
+      <div class="sc-header">
+        <div class="sc-title">Old Die Cutter</div>
+        <div class="status-btns">
+          <label class="lbl-ok" for="olddc-ok">&#10003; Nothing to report</label>
+          <label class="lbl-issue" for="olddc-issue">&#9651; Issues</label>
+        </div>
+      </div>
+      <div class="gen-notes-wrap">
+        <textarea class="gen-notes-ta" id="gennotes-olddc" rows="2" placeholder="Notes (optional)..."></textarea>
+      </div>
+      <div class="issue-panel">
+        <div class="issue-grid">
+          <label class="issue-item"><input type="checkbox" data-s="olddc" value="Nicking"> Nicking</label>
+          <label class="issue-item"><input type="checkbox" data-s="olddc" value="Scoring issue"> Scoring issue</label>
+          <label class="issue-item"><input type="checkbox" data-s="olddc" value="Misregister / misalignment"> Misregister / misalignment</label>
+          <label class="issue-item"><input type="checkbox" data-s="olddc" value="Cracking on fold"> Cracking on fold</label>
+          <label class="issue-item"><input type="checkbox" data-s="olddc" value="Torn / rough edges"> Torn / rough edges</label>
+          <label class="issue-item"><input type="checkbox" data-s="olddc" value="Stripping issue"> Stripping issue</label>
+          <label class="issue-item"><input type="checkbox" data-s="olddc" value="Sheet feeding issue"> Sheet feeding issue</label>
+          <label class="issue-item"><input type="checkbox" data-s="olddc" value="Blanker issue"> Blanker issue</label>
+          <label class="issue-item"><input type="checkbox" data-s="olddc" value="Ink smearing / scuffing"> Ink smearing / scuffing</label>
+          <label class="issue-item"><input type="checkbox" data-s="olddc" value="Die wear"> Die wear</label>
+        </div>
+        <textarea class="notes-ta" id="notes-olddc" rows="2" placeholder="Additional notes..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- LABELS -->
+  <div class="sw">
+    <input class="sr" type="radio" name="s-labels" id="labels-ok" value="ok" checked>
+    <input class="sr issue-r" type="radio" name="s-labels" id="labels-issue" value="issue">
+    <div class="station-card">
+      <div class="sc-header">
+        <div class="sc-title">Labels</div>
+        <div class="status-btns">
+          <label class="lbl-ok" for="labels-ok">&#10003; Nothing to report</label>
+          <label class="lbl-issue" for="labels-issue">&#9651; Issues</label>
+        </div>
+      </div>
+      <div class="gen-notes-wrap">
+        <textarea class="gen-notes-ta" id="gennotes-labels" rows="2" placeholder="Notes (optional)..."></textarea>
+      </div>
+      <div class="issue-panel">
+        <div class="issue-grid">
+          <label class="issue-item"><input type="checkbox" data-s="labels" value="Misprint"> Misprint</label>
+          <label class="issue-item"><input type="checkbox" data-s="labels" value="Shrink wrap issue"> Shrink wrap issue</label>
+          <label class="issue-item"><input type="checkbox" data-s="labels" value="Color variation"> Color variation</label>
+          <label class="issue-item"><input type="checkbox" data-s="labels" value="Registration off"> Registration off</label>
+          <label class="issue-item"><input type="checkbox" data-s="labels" value="Cutting issue"> Cutting issue</label>
+          <label class="issue-item"><input type="checkbox" data-s="labels" value="Wrinkle / crease"> Wrinkle / crease</label>
+          <label class="issue-item"><input type="checkbox" data-s="labels" value="Missing label"> Missing label</label>
+        </div>
+        <textarea class="notes-ta" id="notes-labels" rows="2" placeholder="Additional notes..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- LONG GLUER -->
+  <div class="sw">
+    <input class="sr" type="radio" name="s-longgluer" id="longgluer-ok" value="ok" checked>
+    <input class="sr issue-r" type="radio" name="s-longgluer" id="longgluer-issue" value="issue">
+    <div class="station-card">
+      <div class="sc-header">
+        <div class="sc-title">Long Gluer</div>
+        <div class="status-btns">
+          <label class="lbl-ok" for="longgluer-ok">&#10003; Nothing to report</label>
+          <label class="lbl-issue" for="longgluer-issue">&#9651; Issues</label>
+        </div>
+      </div>
+      <div class="gen-notes-wrap">
+        <textarea class="gen-notes-ta" id="gennotes-longgluer" rows="2" placeholder="Notes (optional)..."></textarea>
+      </div>
+      <div class="issue-panel">
+        <div class="issue-grid">
+          <label class="issue-item"><input type="checkbox" data-s="longgluer" value="Glue skip / void"> Glue skip / void</label>
+          <label class="issue-item"><input type="checkbox" data-s="longgluer" value="Over-glued"> Over-glued</label>
+          <label class="issue-item"><input type="checkbox" data-s="longgluer" value="Crooked fold"> Crooked fold</label>
+          <label class="issue-item"><input type="checkbox" data-s="longgluer" value="Cracking on fold"> Cracking on fold</label>
+          <label class="issue-item"><input type="checkbox" data-s="longgluer" value="Glue stringing"> Glue stringing</label>
+          <label class="issue-item"><input type="checkbox" data-s="longgluer" value="Panel gap"> Panel gap</label>
+          <label class="issue-item"><input type="checkbox" data-s="longgluer" value="Bursting on fold"> Bursting on fold</label>
+          <label class="issue-item"><input type="checkbox" data-s="longgluer" value="Scuff / scratch mark"> Scuff / scratch mark</label>
+          <label class="issue-item"><input type="checkbox" data-s="longgluer" value="Speed-related defect"> Speed-related defect</label>
+        </div>
+        <textarea class="notes-ta" id="notes-longgluer" rows="2" placeholder="Additional notes..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHORT GLUER -->
+  <div class="sw">
+    <input class="sr" type="radio" name="s-shortgluer" id="shortgluer-ok" value="ok" checked>
+    <input class="sr issue-r" type="radio" name="s-shortgluer" id="shortgluer-issue" value="issue">
+    <div class="station-card">
+      <div class="sc-header">
+        <div class="sc-title">Short Gluer</div>
+        <div class="status-btns">
+          <label class="lbl-ok" for="shortgluer-ok">&#10003; Nothing to report</label>
+          <label class="lbl-issue" for="shortgluer-issue">&#9651; Issues</label>
+        </div>
+      </div>
+      <div class="gen-notes-wrap">
+        <textarea class="gen-notes-ta" id="gennotes-shortgluer" rows="2" placeholder="Notes (optional)..."></textarea>
+      </div>
+      <div class="issue-panel">
+        <div class="issue-grid">
+          <label class="issue-item"><input type="checkbox" data-s="shortgluer" value="Glue skip / void"> Glue skip / void</label>
+          <label class="issue-item"><input type="checkbox" data-s="shortgluer" value="Over-glued"> Over-glued</label>
+          <label class="issue-item"><input type="checkbox" data-s="shortgluer" value="Crooked fold"> Crooked fold</label>
+          <label class="issue-item"><input type="checkbox" data-s="shortgluer" value="Cracking on fold"> Cracking on fold</label>
+          <label class="issue-item"><input type="checkbox" data-s="shortgluer" value="Glue stringing"> Glue stringing</label>
+          <label class="issue-item"><input type="checkbox" data-s="shortgluer" value="Panel gap"> Panel gap</label>
+          <label class="issue-item"><input type="checkbox" data-s="shortgluer" value="Bursting on fold"> Bursting on fold</label>
+          <label class="issue-item"><input type="checkbox" data-s="shortgluer" value="Scuff / scratch mark"> Scuff / scratch mark</label>
+          <label class="issue-item"><input type="checkbox" data-s="shortgluer" value="Speed-related defect"> Speed-related defect</label>
+        </div>
+        <textarea class="notes-ta" id="notes-shortgluer" rows="2" placeholder="Additional notes..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="priority-box">
+    <label class="flabel">Priority reminder (optional)</label>
+    <textarea class="priority-ta" id="priority-msg" rows="2">Remember Team, we are shifting our focus to the Die Cutter. Let's help them check every load, thanks!</textarea>
+  </div>
+
+  <div class="actions">
+    <button class="btn-reset" onclick="doReset()">Reset</button>
+    <button class="btn-send" id="send-btn" onclick="doSend()">Send SITREP</button>
+  </div>
+  <div class="toast" id="toast"></div>
+  <div class="foot">Sends to qualitygroup@moquinpress.com &amp; anthony.mancino@moquinpress.com</div>
+</div>
+
+<script>
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz06rW5RCM-tviM5gRCEdW9qkQ8gtCjrmdX-IHTOYeNffzqF6cUcPnbDujmPgay-FzhKg/exec';
+var STATIONS = ['kama','newdc','olddc','labels','longgluer','shortgluer'];
+var LABELS = {kama:'Kama', newdc:'New Die Cutter', olddc:'Old Die Cutter', labels:'Labels', longgluer:'Long Gluer', shortgluer:'Short Gluer'};
+
+function handleSub(sel) {
+  document.getElementById('other-wrap').style.display = (sel.value === 'other') ? 'block' : 'none';
+}
+function getSubmitter() {
+  var v = document.getElementById('submitter-select').value;
+  if (v === 'other') { var n = document.getElementById('other-name').value; return (n && n.trim()) ? n.trim() : ''; }
+  return v ? v : '';
+}
+function getShift() {
+  var r = document.getElementsByName('shift');
+  for (var i = 0; i < r.length; i++) { if (r[i].checked) return r[i].value; }
+  return '1st';
+}
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + type;
+  if (type === 'success') setTimeout(function() { t.className = 'toast'; }, 6000);
+}
+
+function doSend() {
+  var submitter = getSubmitter();
+  if (!submitter) { showToast('Please select a name before sending.', 'error'); return; }
+
+  var dateVal = document.getElementById('report-date').value;
+  var d = dateVal ? new Date(dateVal + 'T12:00:00') : new Date();
+  var dateStr = (d.getMonth()+1) + '/' + d.getDate() + '/' + d.getFullYear();
+  var shift = getShift();
+  var priority = document.getElementById('priority-msg').value.trim();
+  var subject = 'SITREP ' + dateStr;
+
+  var lines = ['Hello Team,', ''];
+  var htmlRows = '';
+  for (var i = 0; i < STATIONS.length; i++) {
+    var id = STATIONS[i];
+    var isIssue = document.getElementById(id + '-issue').checked;
+    var notesEl = document.getElementById('notes-' + id);
+    var notes = notesEl ? notesEl.value.trim() : '';
+    var genNotesEl = document.getElementById('gennotes-' + id);
+    var genNotes = genNotesEl ? genNotesEl.value.trim() : '';
+    var lineText, cellHtml;
+    if (!isIssue) {
+      lineText = LABELS[id] + ': Nothing major to report.' + (genNotes ? ' -- ' + genNotes : '');
+      cellHtml = '<span style="color:#555;">Nothing major to report.</span>';
+      if (genNotes) cellHtml += '<br><span style="color:#777;font-style:italic;font-size:13px;">Note: ' + genNotes + '</span>';
+    } else {
+      var cbs = document.querySelectorAll('[data-s="' + id + '"]:checked');
+      var vals = [];
+      for (var j = 0; j < cbs.length; j++) vals.push(cbs[j].value);
+      var detail = vals.length ? vals.join(', ') : 'Issue reported';
+      if (notes) detail += ' -- ' + notes;
+      lineText = LABELS[id] + ': ' + detail + '.';
+      cellHtml = '<span style="color:#c0392b;">' + (vals.length ? vals.join(', ') : 'Issue reported') + '</span>';
+      if (notes) cellHtml += '<br><span style="color:#777;font-style:italic;font-size:13px;">Note: ' + notes + '</span>';
+    }
+    lines.push(lineText);
+    lines.push('');
+    htmlRows += '<tr><td style="padding:10px 0;border-bottom:1px solid #eee;font-family:Arial,sans-serif;font-size:14px;vertical-align:top;">'
+              + '<strong style="color:#222;">' + LABELS[id] + ':</strong>&nbsp;&nbsp;' + cellHtml + '</td></tr>';
+  }
+  if (priority) { lines.push(priority); lines.push(''); }
+  lines.push('--'); lines.push(submitter); lines.push('Quality Assurance - ' + shift + ' Shift'); lines.push('Moquin');
+
+  var priBlock = priority
+    ? '<tr><td style="padding:14px 0 0 0;"><div style="background:#fffde7;border-left:4px solid #f9a825;padding:10px 14px;"><strong style="color:#7a5c00;font-family:Arial,sans-serif;font-size:14px;">' + priority + '</strong></div></td></tr>'
+    : '';
+
+  var htmlBody = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222;max-width:620px;line-height:1.5;">'
+    + '<p style="margin:0 0 18px 0;">Hello Team,</p>'
+    + '<table style="width:100%;border-collapse:collapse;">' + htmlRows + priBlock + '</table>'
+    + '<p style="margin:20px 0 0 0;font-size:13px;color:#777;border-top:1px solid #eee;padding-top:14px;">--<br>'
+    + '<strong style="color:#444;">' + submitter + '</strong><br>Quality Assurance &middot; ' + shift + ' Shift<br>Moquin</p></div>';
+
+  var btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  showToast('Sending SITREP...', 'success');
+
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ subject: subject, body: lines.join('\n'), htmlBody: htmlBody, submitter: submitter })
+  })
+    .then(function(res) { return res.json(); })
+    .then(function(res) {
+      btn.disabled = false;
+      btn.textContent = 'Send SITREP';
+      if (res.status === 'ok') {
+        showToast('SITREP sent to the quality team!', 'success');
+      } else {
+        showToast('Error: ' + res.message, 'error');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Send SITREP';
+      showToast('Error: ' + err.message, 'error');
+    });
+}
+
+function doReset() {
+  for (var i = 0; i < STATIONS.length; i++) {
+    document.getElementById(STATIONS[i] + '-ok').checked = true;
+    var cbs = document.querySelectorAll('[data-s="' + STATIONS[i] + '"]');
+    for (var j = 0; j < cbs.length; j++) cbs[j].checked = false;
+    var n = document.getElementById('notes-' + STATIONS[i]);
+    if (n) n.value = '';
+    var gn = document.getElementById('gennotes-' + STATIONS[i]);
+    if (gn) gn.value = '';
+  }
+  document.getElementById('submitter-select').value = '';
+  document.getElementById('other-wrap').style.display = 'none';
+  document.getElementById('other-name').value = '';
+  document.getElementById('priority-msg').value = "Remember Team, we are shifting our focus to the Die Cutter. Let's help them check every load, thanks!";
+  document.getElementById('sh1').checked = true;
+  document.getElementById('toast').className = 'toast';
+}
+</script>
+</body>
+</html>
