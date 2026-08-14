@@ -56,6 +56,14 @@ textarea.priority-ta { width: 100%; font-family: inherit; font-size: 13px; color
 .toast.success { display: block; background: #eaf6ee; border: 1px solid #a8d8b8; color: #2a7d46; }
 .toast.error   { display: block; background: #fef0ee; border: 1px solid #f5a09a; color: #c0392b; }
 .foot { text-align: center; font-size: 11px; color: #bbb; margin-top: 10px; line-height: 1.6; }
+.photo-section { margin-top: 8px; }
+.photo-thumbs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.photo-thumb { position: relative; width: 62px; height: 62px; border-radius: 8px; overflow: hidden; border: 1px solid #e0dfd9; flex-shrink: 0; }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-thumb .rm-x { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(0,0,0,.62); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1; cursor: pointer; }
+.photo-btn-row { display: flex; gap: 8px; }
+.photo-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 10px; border: 1px solid #d0cfc9; border-radius: 8px; background: #fff; color: #555; font-size: 12px; font-weight: 500; cursor: pointer; }
+.photo-btn input { display: none; }
 @media (max-width: 480px) {
   .issue-grid { grid-template-columns: 1fr; }
   .sc-header { flex-direction: column; align-items: flex-start; }
@@ -310,9 +318,84 @@ textarea.priority-ta { width: 100%; font-family: inherit; font-size: 13px; color
 </div>
 
 <script>
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzAaksp9-Qy_Rc6twqEmPbZu5kB_a6Yr8_DKbmY76qzzqqEuJQMypT3yNEtO-0LGaI/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz06rW5RCM-tviM5gRCEdW9qkQ8gtCjrmdX-IHTOYeNffzqF6cUcPnbDujmPgay-FzhKg/exec';
 var STATIONS = ['kama','newdc','olddc','labels','longgluer','shortgluer'];
 var LABELS = {kama:'Kama', newdc:'New Die Cutter', olddc:'Old Die Cutter', labels:'Labels', longgluer:'Long Gluer', shortgluer:'Short Gluer'};
+
+var MAX_PHOTOS_PER_STATION = 3;
+var PHOTOS = {};
+(function initPhotoState(){ for (var i=0;i<STATIONS.length;i++) PHOTOS[STATIONS[i]] = []; })();
+
+function initPhotoUI() {
+  for (var i = 0; i < STATIONS.length; i++) {
+    var id = STATIONS[i];
+    var notesEl = document.getElementById('notes-' + id);
+    if (!notesEl || document.getElementById('photos-' + id)) continue;
+    var section = document.createElement('div');
+    section.className = 'photo-section';
+    section.innerHTML =
+      '<div class="flabel" style="margin:8px 0 6px;">Photos (optional)</div>' +
+      '<div class="photo-thumbs" id="photos-' + id + '"></div>' +
+      '<div class="photo-btn-row">' +
+        '<label class="photo-btn">&#128247; Take Photo<input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(this,\'' + id + '\')"></label>' +
+        '<label class="photo-btn">&#128193; Upload<input type="file" accept="image/*" multiple onchange="handlePhotoInput(this,\'' + id + '\')"></label>' +
+      '</div>';
+    notesEl.parentNode.insertBefore(section, notesEl.nextSibling);
+  }
+}
+
+function handlePhotoInput(input, stationId) {
+  var files = Array.prototype.slice.call(input.files || []);
+  files.forEach(function(file) {
+    if (PHOTOS[stationId].length >= MAX_PHOTOS_PER_STATION) {
+      showToast('Max ' + MAX_PHOTOS_PER_STATION + ' photos per station.', 'error');
+      return;
+    }
+    compressImage(file, function(dataUrl) {
+      PHOTOS[stationId].push(dataUrl);
+      renderPhotoThumbs(stationId);
+    });
+  });
+  input.value = '';
+}
+
+function compressImage(file, callback) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var maxDim = 900;
+      var w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w >= h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', 0.62));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderPhotoThumbs(stationId) {
+  var wrap = document.getElementById('photos-' + stationId);
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  PHOTOS[stationId].forEach(function(dataUrl, idx) {
+    var div = document.createElement('div');
+    div.className = 'photo-thumb';
+    div.innerHTML = '<img src="' + dataUrl + '" alt=""><span class="rm-x" onclick="removePhoto(\'' + stationId + '\',' + idx + ')">&times;</span>';
+    wrap.appendChild(div);
+  });
+}
+
+function removePhoto(stationId, idx) {
+  PHOTOS[stationId].splice(idx, 1);
+  renderPhotoThumbs(stationId);
+}
 
 function handleSub(sel) {
   document.getElementById('other-wrap').style.display = (sel.value === 'other') ? 'block' : 'none';
@@ -368,6 +451,15 @@ function doSend() {
       cellHtml = '<span style="color:#c0392b;">' + (vals.length ? vals.join(', ') : 'Issue reported') + '</span>';
       if (notes) cellHtml += '<br><span style="color:#777;font-style:italic;font-size:13px;">Note: ' + notes + '</span>';
     }
+    var photos = PHOTOS[id] || [];
+    if (photos.length) {
+      lineText += ' [' + photos.length + ' photo' + (photos.length > 1 ? 's' : '') + ' attached]';
+      var photoImgsHtml = '';
+      for (var p = 0; p < photos.length; p++) {
+        photoImgsHtml += '<img src="' + photos[p] + '" style="width:110px;height:110px;object-fit:cover;border-radius:6px;margin:6px 8px 0 0;border:1px solid #eee;">';
+      }
+      cellHtml += '<div style="margin-top:6px;">' + photoImgsHtml + '</div>';
+    }
     lines.push(lineText);
     lines.push('');
     htmlRows += '<tr><td style="padding:10px 0;border-bottom:1px solid #eee;font-family:Arial,sans-serif;font-size:14px;vertical-align:top;">'
@@ -422,6 +514,8 @@ function doReset() {
     if (n) n.value = '';
     var gn = document.getElementById('gennotes-' + STATIONS[i]);
     if (gn) gn.value = '';
+    PHOTOS[STATIONS[i]] = [];
+    renderPhotoThumbs(STATIONS[i]);
   }
   document.getElementById('submitter-select').value = '';
   document.getElementById('other-wrap').style.display = 'none';
@@ -430,6 +524,8 @@ function doReset() {
   document.getElementById('sh1').checked = true;
   document.getElementById('toast').className = 'toast';
 }
+
+initPhotoUI();
 </script>
 </body>
 </html>
