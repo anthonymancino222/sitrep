@@ -47,6 +47,9 @@ textarea.gen-notes-ta::placeholder { color: #bbb; }
 .sr.issue-r:checked ~ .station-card .lbl-ok { background: #fff; color: #888; border-color: #d0cfc9; }
 .priority-box { background: #fffbeb; border: 1px solid #f5d97a; border-radius: 8px; padding: 10px 12px; margin-bottom: 1rem; margin-top: 8px; }
 .priority-box .flabel { color: #a07a20; margin-bottom: 4px; display: block; }
+.remarks-box { background: #fff; border: 1px solid #e8e7e2; border-radius: 8px; padding: 10px 12px; margin-bottom: .75rem; margin-top: 8px; }
+.remarks-box .flabel { margin-bottom: 4px; display: block; }
+textarea.remarks-ta { width: 100%; font-family: inherit; font-size: 13px; color: #333; background: transparent; border: none; padding: 4px 0; resize: none; outline: none; line-height: 1.5; }
 textarea.priority-ta { width: 100%; font-family: inherit; font-size: 13px; color: #333; background: transparent; border: none; padding: 4px 0; resize: none; outline: none; line-height: 1.5; }
 .actions { display: flex; gap: 10px; margin-top: .5rem; }
 .btn-reset { padding: 13px 20px; background: transparent; border: 1px solid #d0cfc9; border-radius: 8px; cursor: pointer; font-size: 14px; color: #888; font-family: inherit; }
@@ -304,6 +307,11 @@ textarea.priority-ta { width: 100%; font-family: inherit; font-size: 13px; color
     </div>
   </div>
 
+  <div class="remarks-box">
+    <label class="flabel">Optional additional remarks</label>
+    <textarea class="remarks-ta" id="additional-remarks" rows="2" placeholder="Optional additional remarks..."></textarea>
+  </div>
+
   <div class="priority-box">
     <label class="flabel">Priority reminder (optional)</label>
     <textarea class="priority-ta" id="priority-msg" rows="2">Remember Team, we are shifting our focus to the Die Cutter. Let's help them check every load, thanks!</textarea>
@@ -424,6 +432,7 @@ function doSend() {
   var d = dateVal ? new Date(dateVal + 'T12:00:00') : new Date();
   var dateStr = (d.getMonth()+1) + '/' + d.getDate() + '/' + d.getFullYear();
   var shift = getShift();
+  var remarks = document.getElementById('additional-remarks').value.trim();
   var priority = document.getElementById('priority-msg').value.trim();
   var subject = 'SITREP ' + dateStr;
 
@@ -440,7 +449,7 @@ function doSend() {
     if (!isIssue) {
       lineText = LABELS[id] + ': Nothing major to report.' + (genNotes ? ' -- ' + genNotes : '');
       cellHtml = '<span style="color:#555;">Nothing major to report.</span>';
-      if (genNotes) cellHtml += '<br><span style="color:#777;font-style:italic;font-size:13px;">Note: ' + genNotes + '</span>';
+      if (genNotes) cellHtml += '<br><span style="color:#1a6b38;font-size:13px;">Note: ' + genNotes + '</span>';
     } else {
       var cbs = document.querySelectorAll('[data-s="' + id + '"]:checked');
       var vals = [];
@@ -449,7 +458,7 @@ function doSend() {
       if (notes) detail += ' -- ' + notes;
       lineText = LABELS[id] + ': ' + detail + '.';
       cellHtml = '<span style="color:#c0392b;">' + (vals.length ? vals.join(', ') : 'Issue reported') + '</span>';
-      if (notes) cellHtml += '<br><span style="color:#777;font-style:italic;font-size:13px;">Note: ' + notes + '</span>';
+      if (notes) cellHtml += '<br><span style="color:#c0392b;font-size:13px;">Note: ' + notes + '</span>';
     }
     var photos = PHOTOS[id] || [];
     if (photos.length) {
@@ -465,8 +474,13 @@ function doSend() {
     htmlRows += '<tr><td style="padding:10px 0;border-bottom:1px solid #eee;font-family:Arial,sans-serif;font-size:14px;vertical-align:top;">'
               + '<strong style="color:#222;">' + LABELS[id] + ':</strong>&nbsp;&nbsp;' + cellHtml + '</td></tr>';
   }
+  if (remarks) { lines.push(remarks); lines.push(''); }
   if (priority) { lines.push(priority); lines.push(''); }
   lines.push('--'); lines.push(submitter); lines.push('Quality Assurance - ' + shift + ' Shift'); lines.push('Moquin');
+
+  var remarksBlock = remarks
+    ? '<tr><td style="padding:14px 0 0 0;"><div style="background:#f5f4f0;border-left:4px solid #888;padding:10px 14px;"><span style="color:#444;font-family:Arial,sans-serif;font-size:14px;">' + remarks + '</span></div></td></tr>'
+    : '';
 
   var priBlock = priority
     ? '<tr><td style="padding:14px 0 0 0;"><div style="background:#fffde7;border-left:4px solid #f9a825;padding:10px 14px;"><strong style="color:#7a5c00;font-family:Arial,sans-serif;font-size:14px;">' + priority + '</strong></div></td></tr>'
@@ -474,7 +488,7 @@ function doSend() {
 
   var htmlBody = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222;max-width:620px;line-height:1.5;">'
     + '<p style="margin:0 0 18px 0;">Hello Team,</p>'
-    + '<table style="width:100%;border-collapse:collapse;">' + htmlRows + priBlock + '</table>'
+    + '<table style="width:100%;border-collapse:collapse;">' + htmlRows + remarksBlock + priBlock + '</table>'
     + '<p style="margin:20px 0 0 0;font-size:13px;color:#777;border-top:1px solid #eee;padding-top:14px;">--<br>'
     + '<strong style="color:#444;">' + submitter + '</strong><br>Quality Assurance &middot; ' + shift + ' Shift<br>Moquin</p></div>';
 
@@ -521,6 +535,7 @@ function doReset() {
   document.getElementById('other-wrap').style.display = 'none';
   document.getElementById('other-name').value = '';
   document.getElementById('priority-msg').value = "Remember Team, we are shifting our focus to the Die Cutter. Let's help them check every load, thanks!";
+  document.getElementById('additional-remarks').value = '';
   document.getElementById('sh1').checked = true;
   document.getElementById('toast').className = 'toast';
 }
