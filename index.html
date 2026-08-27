@@ -63,8 +63,12 @@ textarea.priority-ta { width: 100%; font-family: inherit; font-size: 13px; color
 .photo-section { margin-top: 8px; }
 .photo-thumbs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .photo-thumb { position: relative; width: 62px; height: 62px; border-radius: 8px; overflow: hidden; border: 1px solid #e0dfd9; flex-shrink: 0; }
-.photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
 .photo-thumb .rm-x { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(0,0,0,.62); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1; cursor: pointer; }
+.photo-lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 1000; align-items: center; justify-content: center; padding: 24px; cursor: zoom-out; }
+.photo-lightbox.show { display: flex; }
+.photo-lightbox img { max-width: 100%; max-height: 100%; border-radius: 6px; box-shadow: 0 8px 30px rgba(0,0,0,.4); }
+.photo-lightbox .lb-close { position: absolute; top: 16px; right: 20px; width: 36px; height: 36px; background: rgba(255,255,255,.15); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
 .photo-btn-row { display: flex; gap: 8px; }
 .photo-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 10px; border: 1px solid #d0cfc9; border-radius: 8px; background: #fff; color: #555; font-size: 12px; font-weight: 500; cursor: pointer; }
 .photo-btn input { display: none; }
@@ -77,6 +81,11 @@ textarea.priority-ta { width: 100%; font-family: inherit; font-size: 13px; color
 </style>
 </head>
 <body>
+
+<div class="photo-lightbox" id="photo-lightbox" onclick="closeLightbox()">
+  <span class="lb-close" onclick="closeLightbox()">&times;</span>
+  <img id="lightbox-img" src="" alt="">
+</div>
 
 <input type="radio" class="shift-radio" name="shift" id="sh1" value="1st" checked>
 <input type="radio" class="shift-radio" name="shift" id="sh2" value="2nd">
@@ -396,7 +405,7 @@ function renderPhotoThumbs(stationId) {
   PHOTOS[stationId].forEach(function(dataUrl, idx) {
     var div = document.createElement('div');
     div.className = 'photo-thumb';
-    div.innerHTML = '<img src="' + dataUrl + '" alt=""><span class="rm-x" onclick="removePhoto(\'' + stationId + '\',' + idx + ')">&times;</span>';
+    div.innerHTML = '<img src="' + dataUrl + '" alt="" onclick="openLightbox(\'' + dataUrl + '\')"><span class="rm-x" onclick="event.stopPropagation();removePhoto(\'' + stationId + '\',' + idx + ')">&times;</span>';
     wrap.appendChild(div);
   });
 }
@@ -405,6 +414,16 @@ function removePhoto(stationId, idx) {
   PHOTOS[stationId].splice(idx, 1);
   renderPhotoThumbs(stationId);
 }
+
+function openLightbox(dataUrl) {
+  document.getElementById('lightbox-img').src = dataUrl;
+  document.getElementById('photo-lightbox').className = 'photo-lightbox show';
+}
+function closeLightbox() {
+  document.getElementById('photo-lightbox').className = 'photo-lightbox';
+  document.getElementById('lightbox-img').src = '';
+}
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
 
 function handleSub(sel) {
   document.getElementById('other-wrap').style.display = (sel.value === 'other') ? 'block' : 'none';
